@@ -25,6 +25,23 @@ class Pymatrix:
         self.shape = self.rows, self.cols
 
     @classmethod
+    def from_numpy(cls, ndarray: np.ndarray) -> Pymatrix:
+        """
+        Create a matrix from np.ndarray.
+
+        Parameters
+        ----------
+        ndarray : np.ndarray
+            The matrix in numpy.ndarray format.
+
+        Returns
+        -------
+        Pymatrix
+            The matrix is identical to ndarray.
+        """
+        return cls([ndarray[row, :].tolist() for row in range(len(ndarray))])
+
+    @classmethod
     def zeros(cls, rows: int, cols: int) -> Pymatrix:
         """
         Create a matrix filled with zeros.
@@ -68,20 +85,35 @@ class Pymatrix:
             [[random.uniform(min_val, max_val) for _ in range(cols)] for _ in range(rows)]
             )
 
-    def __getitem__(self, idx: int) -> list[float]:
+    def __getitem__(self, idx: int | tuple[int, int]) -> float | list[float] | Pymatrix:
         """
-        Get a row by index.
+        Get a matrix element, row, column, or submatrix using indexing or slicing.
 
         Parameters
         ----------
-        idx : int
-            Index of the row.
-
+        idx : int | tuple[int | slice, int | slice]
+ 
         Returns
         -------
-        list[float]
-            The requested row.
+        : float | list[float] | Pymatrix
+            The requested element, row/column, or submatrix.
         """
+        if isinstance(idx, tuple):
+            row_idx, col_idx = idx
+            
+            # Returns a number (float).
+            if isinstance(row_idx, int) and isinstance(col_idx, int):
+                return self.data[row_idx][col_idx]
+            
+            # Returns a slice (Pymatrix).
+            rows = self.data[row_idx]
+            if isinstance(rows[0], list):
+                sliced = [row[col_idx] for row in rows]
+            else:
+                sliced = rows[col_idx]
+            return Pymatrix(sliced)
+        
+        # Returns a row (list).
         return self.data[idx]
 
     def __setitem__(self, idx: int, value: list[float]) -> None:
@@ -108,23 +140,27 @@ class Pymatrix:
         """
         Return the official string representation of the matrix.
 
-        Returns
-        -------
-        str
-            Representation of the matrix with dimensions.
         """
-        return f"Pymatrix({self.rows}, {self.cols})"
+        rows_str = []
+        for row in self.data:
+            formatted_row = ", ".join(f"{val:3g}" for val in row)
+            rows_str.append(f"[{formatted_row}]")
+        whitespace = len("Pymatrix([") * " "
+
+        return f"Pymatrix([" + str("," + "\n" + whitespace).join(rows_str) + "])"
 
     def __str__(self) -> str:
         """
         Return a nicely formatted string of the matrix content.
-
-        Returns
-        -------
-        str
-            Formatted matrix as a string.
+        
         """
-        return "\n".join(" ".join(f"{val:8.3f}" for val in row) for row in self.data)
+        rows_str = []
+        for row in self.data:
+            formatted_row = ", ".join(f"{val:3g}" for val in row)
+            rows_str.append(f"[{formatted_row}]")
+        whitespace = len("[") * " "
+
+        return f"[" + str("\n" + whitespace).join(rows_str) + "]"
 
     def transpose(self) -> Pymatrix:
         """
